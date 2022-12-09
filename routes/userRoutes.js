@@ -43,8 +43,6 @@ router.post("/login", async (req, res) => {
       .status(500)
       .json({ success: false, message: "Internal Server Error", stack: err });
   }
-
-  res.status(200).json({ success: true, user: value });
 });
 
 // ROUTE: api/users/register -> POST

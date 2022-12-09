@@ -13,16 +13,20 @@
     "aedes": "^0.48.0",
     "aedes-persistence-mongodb": "^9.1.0",
     "bcrypt": "^5.1.0",
+    "cloudinary": "^1.32.0",
     "cluster": "^0.7.7",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "express-async-handler": "^1.2.0",
+    "express-fileupload": "^1.4.0",
     "joi": "^17.7.0",
     "jsonwebtoken": "^8.5.1",
+    "link-preview-js": "^3.0.4",
     "mongoose": "^6.7.3",
     "mqemitter": "^5.0.0",
     "mqemitter-mongodb": "^8.1.0",
+    "node-cron": "^3.0.2",
     "websocket-stream": "^5.5.2"
   }
 }

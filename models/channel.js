@@ -14,6 +14,10 @@ const channelSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isGeneral: {
+      type: Boolean,
+      default: false,
+    },
     server: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Server",

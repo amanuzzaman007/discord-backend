@@ -1,9 +1,8 @@
 const express = require("express");
 const { authMiddleware } = require("../middlewares/authMiddleware");
 const router = express.Router();
-const Channel = require("../models/channel");
-const User = require("../models/user");
 const Message = require("../models/message");
+const { getLinkPreview } = require("link-preview-js");
 
 // api/messages
 router.get("/:channelId", authMiddleware, async (req, res) => {
@@ -57,6 +56,20 @@ router.get("/:channelId", authMiddleware, async (req, res) => {
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Internal Server Error", stack: err });
+  }
+});
+
+// generate links
+router.post("/generate-link", async (req, res) => {
+  try {
+    const { link } = req.body;
+    if (!link) {
+      return res.status(404).json({ message: "Link is not found!" });
+    }
+    const data = await getLinkPreview(link);
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 });
 

@@ -36,7 +36,7 @@ const saveMessageToDB = async (packet, aedes) => {
     };
 
     let message = await Message.create(newMessage);
-    console.log({ message });
+
     message = await message.populate("sender", "-password");
     message = await message.populate("channel");
 

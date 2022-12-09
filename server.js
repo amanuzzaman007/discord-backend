@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const fileupload = require("express-fileupload");
 const path = require("path");
 const mongoose = require("mongoose");
 const ws = require("websocket-stream");
@@ -7,8 +8,16 @@ const cluster = require("cluster");
 const userRoutes = require("./routes/userRoutes");
 const channelRoutes = require("./routes/channelRoutes");
 const messageRoutes = require("./routes/messageRoutes");
+const chatServerRoutes = require("./routes/chatServerRoutes");
+const inviteRoutes = require("./routes/inviteRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 const { saveMessageToDB } = require("./dbUtilities/message");
-const { CHANNEL_DIRECT_MESSAGES_CLIENT } = require("./subTypes");
+const {
+  CHANNEL_DIRECT_MESSAGES_CLIENT,
+  USER_NOTIFICATIONS,
+  USER_NOTIFICATION_FROM_CLIENT_TO_SERVER,
+} = require("./subTypes");
+const { saveAndNotifyUser } = require("./dbUtilities/notification");
 
 const app = express();
 require("dotenv").config();
@@ -18,6 +27,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "/build")));
+app.use(
+  fileupload({
+    useTempFiles: true,
+    limits: {
+      fileSize: 50 * 1024 * 1024,
+    },
+  })
+);
 
 // db connection
 mongoose
@@ -139,9 +156,24 @@ const ports = {
 app.use("/api/users", userRoutes);
 app.use("/api/channel", channelRoutes);
 app.use("/api/messages", messageRoutes);
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "build/index.html"));
+app.use("/api/servers", chatServerRoutes);
+app.use("/api/invites", inviteRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use((err, req, res, next) => {
+  console.log(err, req.headerSent);
+  if (req.headerSent) {
+    next("There was an problem: header sent");
+  } else {
+    if (err.message) {
+      res.status(500).send(err.message);
+    } else {
+      res.status(500).send("There was an error");
+    }
+  }
 });
+// app.get("*", (req, res) => {
+//   res.sendFile(path.join(__dirname, "build/index.html"));
+// });
 
 // -------- non-SSL websocket port -------------
 var wsServer = require("http").createServer(app);
@@ -157,11 +189,11 @@ aedes.on("client", function (client) {
 
 aedes.on("subscribe", function (subscriptions, client) {
   // client.id, aedes.id,
-  console.log({ subscriptions, clientId: client.id });
+  // console.log({ subscriptions, clientId: client.id });
 });
 
 aedes.on("unsubscribe", function (subscriptions, client) {
-  console.log({ subscriptions, clientId: client.id });
+  // console.log({ subscriptions, clientId: client.id });
 });
 
 // fired when a client connects
@@ -191,21 +223,15 @@ PACKET
 
 // fired when a message is published
 aedes.on("publish", async function (packet, client) {
-  console.log(packet);
   switch (packet.topic) {
     case CHANNEL_DIRECT_MESSAGES_CLIENT:
       // save direct message to mongodb
       saveMessageToDB(packet, aedes);
       break;
-
+    case USER_NOTIFICATION_FROM_CLIENT_TO_SERVER:
+      saveAndNotifyUser(packet, aedes);
+      break;
     default:
       break;
   }
-
-  // console.log({
-  //   payload: packet.payload.toString(),
-  //   topic: packet.topic,
-  //   aedesID: aedes.id,
-  //   // client: client.id,
-  // });
 });
